@@ -28,6 +28,7 @@
         <p>Nivel dB: {{ vumetro.dbLevel }}</p>
         <p>Escala 0-130: {{ vumetro.scaled130 }}</p>
         <p>Escala 196-376: {{ vumetro.mappedLevel }}</p>
+        <p>Valor pico retenido: {{ vumetro.peakLevel }}</p>
       </div>
 
       <v-file-input

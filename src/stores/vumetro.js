@@ -23,6 +23,10 @@ export const useVumetroStore = defineStore('vumetro', {
     audioFileSource: null,
     dbUpdateInterval: 50, // ms entre actualizaciones de dB
     lastDbUpdate: 0,
+    peakLevel: 196,         // valor máximo retenido
+    peakLastUpdated: Date.now(), // para controlar el tiempo de inactividad
+    peakSpeed: 6,
+    peakHold: 400
   }),
 
   getters: {
@@ -34,7 +38,8 @@ export const useVumetroStore = defineStore('vumetro', {
     },
     scaled130(state) {
       return Math.round(state.level130)
-    }
+    },
+    roundedPeakLevel: state => Math.round(state.peakLevel)
   },
 
   actions: {
@@ -137,6 +142,7 @@ export const useVumetroStore = defineStore('vumetro', {
       // this.level130 = Math.max(0, Math.min(130, (rms * 130)));
       // this.levelMapped = Math.round(this.mapRange(this.level130, 0, 130, 196, 376));
 
+
       this.analyser.getByteFrequencyData(this.dataArray);
       let now = performance.now();
       if (now - this.lastDbUpdate > this.dbUpdateInterval) {
@@ -149,11 +155,30 @@ export const useVumetroStore = defineStore('vumetro', {
         this.levelDb = normalizedLevel * 130;
         
         // Mapear a tu rango 196-376
-        this.levelMapped = Math.round(this.mapRange(normalizedLevel, 0, 1, 196, 376));
+        // this.levelMapped = Math.round(this.mapRange(normalizedLevel, 0, 1, 196, 376));
+        const rawMapped = this.mapRange(this.level130, 0, 130, 196, 376)
+        const step = 6
+        const steppedMapped = Math.round((rawMapped - 196) / step) * step + 196
+
+        // Asegúrate de no pasarte del rango permitido
+        this.levelMapped = Math.max(196, Math.min(376, steppedMapped))
         
         // Escala 0-130
         this.level130 = Math.round(this.levelDb);
         this.lastDbUpdate = now
+        // PEAKING
+        const nowPeaking = Date.now()
+
+        if (this.levelMapped > this.peakLevel) {
+          this.peakLevel = this.levelMapped
+          this.peakLastUpdated = nowPeaking
+        }
+        const timeSincePeak = nowPeaking - this.peakLastUpdated
+
+        if (timeSincePeak > this.peakHold && this.peakLevel > 196) {
+          // Disminuir suavemente el pico (por ejemplo, 2 unidades por frame)
+          this.peakLevel = Math.max(196, this.peakLevel - this.peakSpeed)
+        }
       }
       this.animationFrame = requestAnimationFrame(() => this.updateLevel());
     },
