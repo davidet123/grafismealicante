@@ -59,11 +59,7 @@
 
   // Define el handler throttled
   const throttledUpdate = throttle((val) => {
-    swiftConnectionStore.rtRemote.updateFields(
-      'VALOR_VUMETRO::VALOR_VUMETROTEXT',
-      'String',
-      val
-    )
+    swiftConnectionStore.rtRemote.updateFields('VALOR_VUMETRO::VALOR_VUMETROTEXT','String',val)
   }, delayMs)
 
   watch(() => level130.value, val => {

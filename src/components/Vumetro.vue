@@ -7,7 +7,11 @@
       item-title="label"
       item-value="deviceId"
       label="Dispositivo de entrada"
-    />
+      />
+      <v-text-field
+        label="Valor maximo"
+        v-model="valorMaximoVumetro"
+      ></v-text-field>
     <v-card-text>
       <v-slider
         v-model="gain"
@@ -16,18 +20,36 @@
         step="0.01"
         label="Ganancia"
       ></v-slider>
+      <v-row>
+        <v-col cols="6" class="text-right">
+          <v-btn color="success" size="x-small" class="mr-2" @click="graficoIn('Test_vumetro_alicante')">
+            BRING ON
+          </v-btn>
+        </v-col>
+        <v-col cols="6" class="text-left">
+          <v-btn color="error" size="x-small" @click="graficoOut('Test_vumetro_alicante')">
+            TAKE OFF
+          </v-btn>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="6" class="text-center">
+          <v-btn color="primary" class="mr-2" @click="vumetro.startMic" :disabled="vumetro.isListening || isFilePlaying">
+            MIC ON
+          </v-btn>
+        </v-col>
+        <v-col cols="6" class="text-center">
+          <v-btn color="error" @click="vumetro.stopMic" :disabled="!vumetro.isListening">
+            MIC OFF
+          </v-btn>
+        </v-col>
+      </v-row>
 
-      <v-btn color="primary" class="mr-2" @click="vumetro.startMic" :disabled="vumetro.isListening || isFilePlaying">
-        Iniciar Micrófono
-      </v-btn>
-      <v-btn color="error" @click="vumetro.stopMic" :disabled="!vumetro.isListening">
-        Detener Micrófono
-      </v-btn>
 
       <div class="mt-4">
         <p>Nivel dB: {{ vumetro.dbLevel }}</p>
         <p>Escala 0-130: {{ vumetro.scaled130 }}</p>
-        <p>Escala 196-376: {{ vumetro.mappedLevel }}</p>
+        <p>Escala 231-421: {{ vumetro.mappedLevel }}</p>
         <p>Valor pico retenido: {{ vumetro.peakLevel }}</p>
       </div>
 
@@ -59,8 +81,27 @@
 <script setup>
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useVumetroStore } from '@/stores/vumetro'
+import { useSwiftConnectionStore } from '@/stores/swiftconnection'
+import { storeToRefs } from 'pinia'
+
 
 const vumetro = useVumetroStore()
+const swiftConnectionStore = useSwiftConnectionStore()
+
+const graficoIn = grafico => {
+  // Resetear vumetro
+  swiftConnectionStore.rtRemote.updateFields('VALOR_VUMETRO::VALOR_VUMETROTEXT','String',"0")
+  swiftConnectionStore.rtRemote.updateFields("CLIP_VUMETRO","Translate","231, 560")
+  swiftConnectionStore.playGraphic(grafico)
+  swiftConnectionStore.bringOn(grafico)
+}
+
+const graficoOut = grafico => {
+  swiftConnectionStore.takeOff(grafico)
+}
+
+
+const { valorMaximoVumetro } = storeToRefs(vumetro)
 const isPlaying = ref(false)
 const isFilePlaying = ref(false)
 const currentTime = ref(0)

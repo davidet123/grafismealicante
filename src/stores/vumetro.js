@@ -11,7 +11,7 @@ export const useVumetroStore = defineStore('vumetro', {
     isListening: false,
     levelDb: 0,
     level130: 0,   // de 0 a 130
-    levelMapped: 196,
+    levelMapped: 231,
     animationFrame: null,
     audioDevices: [],
     selectedDeviceId: null,
@@ -23,10 +23,11 @@ export const useVumetroStore = defineStore('vumetro', {
     audioFileSource: null,
     dbUpdateInterval: 50, // ms entre actualizaciones de dB
     lastDbUpdate: 0,
-    peakLevel: 196,         // valor máximo retenido
+    peakLevel: 231,         // valor máximo retenido
     peakLastUpdated: Date.now(), // para controlar el tiempo de inactividad
     peakSpeed: 6,
-    peakHold: 400
+    peakHold: 400,
+    valorMaximoVumetro: 130,
   }),
 
   getters: {
@@ -140,7 +141,7 @@ export const useVumetroStore = defineStore('vumetro', {
 
       // // Mapear para tus escalas
       // this.level130 = Math.max(0, Math.min(130, (rms * 130)));
-      // this.levelMapped = Math.round(this.mapRange(this.level130, 0, 130, 196, 376));
+      // this.levelMapped = Math.round(this.mapRange(this.level130, 0, 130, 231, 421));
 
 
       this.analyser.getByteFrequencyData(this.dataArray);
@@ -152,16 +153,16 @@ export const useVumetroStore = defineStore('vumetro', {
         const normalizedLevel = maxLevel / 255; // Normalizar a 0-1
         
         // Calcular dB en escala 0-130 (como en tu versión)
-        this.levelDb = normalizedLevel * 130;
+        this.levelDb = normalizedLevel * this.valorMaximoVumetro;
         
-        // Mapear a tu rango 196-376
-        // this.levelMapped = Math.round(this.mapRange(normalizedLevel, 0, 1, 196, 376));
-        const rawMapped = this.mapRange(this.level130, 0, 130, 196, 376)
-        const step = 6
-        const steppedMapped = Math.round((rawMapped - 196) / step) * step + 196
+        // Mapear a tu rango 231-421
+        // this.levelMapped = Math.round(this.mapRange(normalizedLevel, 0, 1, 231, 421));
+        const rawMapped = this.mapRange(this.level130, 0, this.valorMaximoVumetro, 231, 421)
+        const step = 6.3
+        const steppedMapped = ((rawMapped - 231) / step) * step + 231
 
         // Asegúrate de no pasarte del rango permitido
-        this.levelMapped = Math.max(196, Math.min(376, steppedMapped))
+        this.levelMapped = Math.max(231, Math.min(421, steppedMapped))
         
         // Escala 0-130
         this.level130 = Math.round(this.levelDb);
@@ -175,9 +176,9 @@ export const useVumetroStore = defineStore('vumetro', {
         }
         const timeSincePeak = nowPeaking - this.peakLastUpdated
 
-        if (timeSincePeak > this.peakHold && this.peakLevel > 196) {
+        if (timeSincePeak > this.peakHold && this.peakLevel > 231) {
           // Disminuir suavemente el pico (por ejemplo, 2 unidades por frame)
-          this.peakLevel = Math.max(196, this.peakLevel - this.peakSpeed)
+          this.peakLevel = Math.max(231, this.peakLevel - this.peakSpeed)
         }
       }
       this.animationFrame = requestAnimationFrame(() => this.updateLevel());
